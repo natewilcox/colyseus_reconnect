@@ -1,0 +1,6 @@
+node_modules
+dist
+dist-server
+dist-client
+.parcel-cache
+.cache

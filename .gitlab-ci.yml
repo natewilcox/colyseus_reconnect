@@ -1,0 +1,45 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  S3_BUCKET_NAME: $S3_BUCKET_NAME
+
+build_client:
+  stage: build
+  image: node:18.13.0
+  script:
+    - echo "Building client"
+    - npm install
+    - npm run build-client
+  artifacts:
+    paths:
+      - ./dist-client/
+
+build_server:
+  stage: build
+  image: node:18.13.0
+  script:
+    - echo "Building server"
+    - npm install
+    - npm run build
+  artifacts:
+    paths:
+      - ./dist-client/
+      - ./dist-server/
+
+deploy_client:
+  stage: deploy
+  image: registry.gitlab.com/gitlab-org/cloud-deploy/aws-base:latest
+  script:
+    - echo "Deploy client"
+    - aws s3 sync ./dist-client s3://$S3_BUCKET_NAME/ --acl=private --delete
+    - aws cloudfront create-invalidation --distribution-id $TIC_TAC_TOE_DIST_ID --paths "/*"
+
+deploy_server:
+  stage: deploy
+  image: node:18.13.0
+  script:
+    - echo "Deploy server"
+    - npm install -g @colyseus/cloud@latest
+    - npx @colyseus/cloud deploy --branch main --remote git@gitlab.com:natewilcox/tic-tac-toe.git
